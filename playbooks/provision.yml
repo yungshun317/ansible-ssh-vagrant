@@ -25,6 +25,19 @@
         state: present
         line: "{{ hostvars[item]['ssh_keys']['stdout'] }}"
       with_items: "{{ groups['all'] }}"
+
+    - name: For each host, scan for its ssh public key
+      shell: "ssh-keyscan {{ item }},`dig +short {{ item }}`"
+      with_items: "{{ groups['all'] }}"
+      register: ssh_known_host_results
+      ignore_errors: yes
+
+    - name: Add/update the public key in the '{{ ssh_known_hosts_file }}'
+      known_hosts:
+        name: "{{ item.item }}"
+        key: "{{ item.stdout }}"
+        path: /root/.ssh/known_hosts
+      with_items: "{{ ssh_known_host_results.results }}"
 #- hosts: ubuntu2
 #  become: yes
 #  gather_facts: no
